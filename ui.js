@@ -25,7 +25,7 @@ const balMap=()=>{const o={},d={},c={},bd={},s=S.tx.slice().sort((x,y)=>key(x).l
 const fdl=d=>{const D=new Date(d+'T00:00'),f=o=>D.toLocaleDateString('en-GB',o);return`${f({weekday:'long'})}, ${D.getDate()} ${f({month:'long'})}, ${D.getFullYear()}`};
 const chg=(a,b)=>{const c=pct(a,b);return c===null?'no earlier data':(c>=0?'▲ +':'▼ ')+c+'%'};
 const mpill=()=>`<button type="button" class="mp" data-act="mpick" aria-label="Choose month"><span>${ml(S.m)}</span>${ic('chev')}</button>`;
-const nb=()=>isSet(S.m)?'':'<a class="nb" href="#/setup"><span>'+ic('info')+'<span>Not set for this month. Set balance and budget</span></span>'+ic('chevr')+'</a>';
+const nb=()=>isSet(S.m)?'':'<a class="nb" href="#/setup"><span>'+ic('info')+'<span>Set Balance And Budget For This Month</span></span>'+ic('chevr')+'</a>';
 const hdr=(t,r='',back='#/')=>`<header class="hd"><a class="bk" href="${back}" aria-label="Back">${ic('back')}</a><h1>${t}</h1>${r}</header>`;
 /* ---------- feedback: toast and confirm dialogs ---------- */
 let tmr;
@@ -56,7 +56,7 @@ function daily(){const lim=(mget(curM())||{}).daily||0,days=[];for(let i=6;i>=0;
 function dash(){const rg=Rm(S.m),e=sum(X(rg.cur)),i=sum(X(rg.cur,'income')),w=weekNet(),tl=S.tx.filter(t=>t.date>=rg.cur[0]&&t.date<=rg.cur[1]).sort((a,b)=>key(b).localeCompare(key(a)));
  let h=`<header class="hero"><div class="hr1"><a class="avw" href="#/s" aria-label="Profile and settings">${AV}<i class="bdg">${ic('wal')}</i></a>${mpill()}<a class="bellb" href="#/i" aria-label="Insights">${ic('bellf')}${S.tx.length?'<i></i>':''}</a></div><div class="bal"><small>${S.m===curM()?'Current Balance':'Balance at month end'}</small><div class="bn">${Mh(bal(rg.cur[1]))}</div>${S.m===curM()?`<span class="chip">${w<0?'-':'+'}${M(Math.abs(w))} than last week</span>`:''}</div></header>
 <section class="sheet">${nb()}<div class="sh"><h2>Your Money ${ic('info')}</h2><a class="pill" href="#/r">Details ${ic('chevr')}</a></div><div class="two"><div class="mc"><span class="tl" style="background:#e4f0ff;color:#2f8cf0">${ic('bag')}</span><span class="mt"><small>Income ${ic('info')}</small><b>${M(i)}</b></span></div><div class="mc"><span class="tl" style="background:#ffe8e4;color:#ff5a45">${ic('wal')}</span><span class="mt"><small>Expenses ${ic('info')}</small><b>${M(e)}</b></span></div></div>
-${daily()}<a class="ins" href="#/i">${ic('spark')}<span>${S.tx.length?'Your insight is ready':'Add a transaction for insights'}</span><em>View ${ic('chevr')}</em></a>
+${daily()}<a class="ins" href="#/i">${ic('spark')}<span>${S.tx.length?'Your insight is ready':'Add transaction(s) for insights'}</span><em>View ${ic('chevr')}</em></a>
 <div class="sh"><h2>Transactions</h2><span class="ic2"><a href="#/tx" aria-label="Search transactions">${ic('pin')}</a><a href="#/tx" aria-label="All transactions">${ic('hist')}</a><a class="pill lav" href="#/tx">For the Period</a></span></div>`;
  if(!S.tx.length)h+='<div class="card pc"><h2>Welcome. Your data stays on this device.</h2><p class="mut">Add your first transaction, or import a bank statement to get started.</p><div class="acts left"><button class="btn" data-act="add">Add transaction</button><button class="sec" data-act="stmt">Import bank statement (CSV)</button></div></div>';
  else if(!tl.length)h+='<p class="mut">No transactions in this month.</p>';
