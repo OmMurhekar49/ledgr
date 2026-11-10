@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'">
+<meta name="theme-color" content="#8b5cf6">
+<title>Ledgr - Local Expense Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icons/icon.svg"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><link rel="stylesheet" href="styles.css">
+</head><body>
+<main id="v" tabindex="-1"></main>
+<nav aria-label="Main"></nav>
+<dialog id="f" aria-label="Details"></dialog>
+<dialog id="c" aria-label="Confirm"></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<input id="sfile" type="file" accept=".csv,.xls,.xlsx,.txt,.tsv" hidden>
+<input id="file" type="file" accept=".json,application/json" hidden>
+<noscript>This app needs JavaScript.</noscript>
+<script src="xlsx.mini.min.js"></script>
+<script src="icons.js"></script>
+<script src="app.js"></script>
+<script src="import.js"></script>
+<script src="ui.js"></script>
+</body></html>
