@@ -10,6 +10,11 @@ function pd(v){let r='',m;
   else if(m=v.match(/^([A-Za-z]{3})[a-z]*\.? (\d{1,2}),? (\d{4})/)){const mo=MON[m[1].toLowerCase()];if(mo)r=m[3]+'-'+p2(mo)+'-'+p2(m[2])}}
  if(!r)return'';const d=new Date(r+'T00:00');return isNaN(d)||iso(d)!==r?'':r}
 const pn=v=>{if(typeof v==='number')return v;const n=parseFloat(String(v??'').replace(/[₹,\s]/g,'').replace(/^\((.*)\)$/,'-$1').replace(/(cr|dr)\.?$/i,''));return isNaN(n)?0:n};
+function pt(v){let h,m;
+ if(v instanceof Date&&!isNaN(v)){const t=new Date(Math.round(v/6e4)*6e4),mn=t.getHours()*60+t.getMinutes();if(mn>=1430||mn<=10)return'';h=t.getHours();m=t.getMinutes()}
+ else if(typeof v==='number'){if(!(v>0&&v<1))return'';const mn=Math.round(v*1440);h=Math.floor(mn/60)%24;m=mn%60}
+ else{const x=String(v??'').match(/\b(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp][Mm])?/);if(!x)return'';h=+x[1];m=+x[2];if(x[3]){const pm=/p/i.test(x[3]);if(pm&&h<12)h+=12;if(!pm&&h===12)h=0}}
+ return h>23||m>59||(!h&&!m)?'':p2(h)+':'+p2(m)}
 function csvRows(txt){const head=txt.split('\n').slice(0,30).join('\n'),dl=[',',';','\t','|'].map(d=>[d,head.split(d).length]).sort((a,b)=>b[1]-a[1])[0][0],rows=[];let r=[],c='',q=false;
  for(let i=0;i<txt.length;i++){const ch=txt[i];if(q){if(ch==='"'){if(txt[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}else if(ch==='"')q=true;else if(ch===dl){r.push(c);c=''}else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&txt[i+1]==='\n')i++;r.push(c);c='';rows.push(r);r=[]}else c+=ch}
  r.push(c);rows.push(r);return rows}
@@ -18,14 +23,14 @@ async function fileRows(f){const n=f.name.toLowerCase();
  if(/\.xlsx?$/.test(n)){if(!window.XLSX)throw new Error('Excel reader did not load. Reload the page and try again.');const wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:''})}
  return csvRows((await f.text()).replace(/^\uFEFF/,''))}
 function detect(rows){for(let i=0;i<Math.min(rows.length,60);i++){const hr=rows[i].map(x=>String(x??'').trim()),h=hr.map(x=>x.toLowerCase()),f=(re,not)=>h.findIndex((x,k)=>k!==not&&re.test(x));
-  const ty=f(/dr.?\/?cr|cr.?\/?dr|indicator|^type$|^txn type|^transaction type/),di=(k=>k>=0?k:f(/date/))(f(/^(txn |transaction |tran |trans |posting )?date$/)),ds=f(/narration|description|particulars|details|remarks|transactio|transaction|particular|detail|remark/),
+  const tm=f(/^(txn |transaction |tran |trans |posting )?time$/),ty=f(/dr.?\/?cr|cr.?\/?dr|indicator|^type$|^txn type|^transaction type/),di=(k=>k>=0?k:f(/date/))(f(/^(txn |transaction |tran |trans |posting )?date$/)),ds=f(/narration|description|particulars|details|remarks|transactio|transaction|particular|detail|remark/,tm),
    dr=f(/debit|withdrawal|paid out|^dr\.?$/,ty),cr=f(/credit|deposit|paid in|^cr\.?$/,ty),am=f(/^amount|txn amount|transaction amount/,ty);
-  if(di>=0&&ds>=0&&(dr>=0||cr>=0||am>=0))return{hi:i,di,ds,dr,cr,am,ty,rf:f(/ref|chq|cheque/),hr}}return null}
+  if(di>=0&&ds>=0&&(dr>=0||cr>=0||am>=0))return{hi:i,di,ds,dr,cr,am,ty,tm,rf:f(/ref|chq|cheque/),hr}}return null}
 function parseStmt(rows){const d=detect(rows);if(!d)return null;const list=[];
  for(let i=d.hi+1;i<rows.length;i++){const r=rows[i],date=pd(r[d.di]);if(!date)continue;let a=0,type='expense';
   if(d.dr>=0&&pn(r[d.dr])>0)a=pn(r[d.dr]);else if(d.cr>=0&&pn(r[d.cr])>0){a=pn(r[d.cr]);type='income'}
   else if(d.am>=0){const raw=String(r[d.am]).trim(),v=pn(r[d.am]),t=d.ty>=0?String(r[d.ty]).trim().toLowerCase():'';a=Math.abs(v);type=t?(/^c/.test(t)?'income':'expense'):/cr\.?$/i.test(raw)?'income':/dr\.?$/i.test(raw)?'expense':v<0?'expense':'income'}
-  if(!(a>0))continue;list.push({date,desc:String(r[d.ds]??'').replace(/\s+/g,' ').trim(),type,amountMinor:Math.round(a*100),ref:d.rf>=0?String(r[d.rf]??'').trim():''})}
+  if(!(a>0))continue;const tm=(d.tm>=0&&pt(r[d.tm]))||pt(r[d.di]);list.push({date,time:tm,desc:String(r[d.ds]??'').replace(/\s+/g,' ').trim(),type,amountMinor:Math.round(a*100),ref:d.rf>=0?String(r[d.rf]??'').trim():''})}
  return{d,list}}
 function merch(s){let m=s;const p=s.split(/[-\/]/);if(/^upi$/i.test(p[0].trim()))m=p.find((x,i)=>i>0&&!/^\d+$/.test(x.trim())&&x.trim().length>1)||s;
  else{const q=s.match(/^(?:POS|ECOM|NEFT|IMPS|ACH|NACH|ATW|ATM)[-\/ ]+(?:[A-Z0-9]+[-\/ ]+)?([^-\/]{3,})/i);if(q)m=q[1]}
@@ -48,12 +53,12 @@ async function stmt(file){let rows;try{rows=await fileRows(file)}catch(e){return
  if(!S.cfg.accounts.length)return toast('Add an account in Settings first.');
  const cnt={},L=learn();S.tx.forEach(t=>{const k=dk(t);cnt[k]=(cnt[k]||0)+1});
  p.list.forEach(x=>{const k=dk(x);if(cnt[k]>0){cnt[k]--;x.dup=true;return}x.merchant=merch(x.desc);[x.categoryId,x.subcategoryId]=guess(x,L)});
- ST=p;const nw=p.list.filter(x=>!x.dup),un=nw.filter(x=>x.categoryId==='unc').length,d=p.d,h=d.hr,colz=[['date',d.di],['description',d.ds],['debit',d.dr],['credit',d.cr],['amount',d.am]].filter(x=>x[1]>=0).map(x=>`${x[0]}: ${E(h[x[1]])}`).join(', ');
+ ST=p;const nw=p.list.filter(x=>!x.dup),un=nw.filter(x=>x.categoryId==='unc').length,d=p.d,h=d.hr,colz=[['date',d.di],['time',d.tm],['description',d.ds],['debit',d.dr],['credit',d.cr],['amount',d.am]].filter(x=>x[1]>=0).map(x=>`${x[0]}: ${E(h[x[1]])}`).join(', ');
  openD(`<h2 class="dt">Import bank statement</h2><p class="mut">${E(file.name)}</p><div class="imp3"><span><b>${nw.length}</b><small>new</small></span><span><b>${p.list.length-nw.length}</b><small>already here</small></span><span><b>${un}</b><small>need a category</small></span></div><small>Detected columns: ${colz}</small>
  <label class="fld">This statement is for account<select id="sacc">${S.cfg.accounts.map(a=>`<option value="${a.id}"${a.name==='UPI'?' selected':''}>${E(a.name)}</option>`).join('')}</select></label>
  <div class="pv">${nw.slice(0,6).map(x=>{const c=cat(x.categoryId),sb=sub(c,x.subcategoryId);return`<div class="pvr">${tile(x.categoryId)}<span class="tn"><b>${E(x.merchant||'-')}</b><small>${fd(x.date)} · ${E(c.name)}${sb?' · '+E(sb):''}</small></span><em class="${x.type}">${x.type==='income'?'+':'-'}${M(x.amountMinor)}</em></div>`}).join('')}</div>${nw.length>6?`<small>and ${nw.length-6} more</small>`:''}
  <p class="mut">Check that income and expenses look right. Rows that need a category are shown first after the import so you can fix them. The app learns from your fixes.</p><div class="acts"><button type="button" class="sec" data-act="close">Cancel</button><button type="button" class="btn grow" data-act="stgo"${nw.length?'':' disabled'}>Import ${nw.length}</button></div>`)}
 async function stgo(){if(!ST)return;const acc=$('#sacc').value,now=new Date().toISOString(),
- add=ST.list.filter(x=>!x.dup).map(x=>({id:uid(),amountMinor:x.amountMinor,currency:'INR',type:x.type,description:x.desc,merchant:x.merchant,categoryId:x.categoryId,subcategoryId:x.subcategoryId,accountId:acc,toAccountId:'',date:x.date,time:'',timestamp:new Date(x.date+'T00:00').getTime(),notes:'',tags:['imported'],recurring:false,createdAt:now,updatedAt:now,ref:x.ref,src:'import'}));
+ add=ST.list.filter(x=>!x.dup).map(x=>({id:uid(),amountMinor:x.amountMinor,currency:'INR',type:x.type,description:x.desc,merchant:x.merchant,categoryId:x.categoryId,subcategoryId:x.subcategoryId,accountId:acc,toAccountId:'',date:x.date,time:x.time||'',timestamp:new Date(x.date+'T'+(x.time||'00:00')).getTime(),notes:'',tags:['imported'],recurring:false,createdAt:now,updatedAt:now,ref:x.ref,src:'import'}));
  try{await run(s=>add.forEach(t=>s.put(t)))}catch(e){return toast('Could not save the import. Nothing was changed.','',null,6000)}
  S.tx=[...S.tx,...add];ST=null;$('#f').close();S.q={s:'',type:'',cat:add.some(t=>t.categoryId==='unc')?'unc':'',sort:'new',f:'',t:'',lim:150};location.hash='#/tx';route();toast('Imported '+add.length+' transactions')}
